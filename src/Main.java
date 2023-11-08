@@ -18,7 +18,7 @@ class ProdutorConsumidor {
 
 public class Main {
     public static void main(String[] args) {
-        final int NUM_PRODUTORES = 1;
+        final int NUM_PRODUTORES = 3;
         final int NUM_CONSUMIDORES = 3; // Use vários consumidores
 
         ProdutorConsumidor pc = new ProdutorConsumidor();
