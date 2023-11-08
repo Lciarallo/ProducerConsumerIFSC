@@ -1,55 +1,25 @@
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 class ProdutorConsumidor {
-    private final Semaphore mutex = new Semaphore(1);
-    private final Semaphore espacoNoBuffer = new Semaphore(5);
-    private final Semaphore itens = new Semaphore(0);
-
-    private final Object[] buffer = new Object[5];
-    private int in = 0;
-    private int out = 0;
-
-    public Object consumir() throws InterruptedException {
-        itens.acquire(); // Aguarde até que haja itens no buffer
-        mutex.acquire();
-
-        Object item = buffer[out];
-        
-
-        mutex.release();
-        espacoNoBuffer.release(); // Sinalize que há espaço disponível no buffer
-        
-        System.out.println("Consumindo: " + item);
-        return item;
-    }
+    private final BlockingQueue<Object> buffer = new ArrayBlockingQueue<>(10);
 
     public void produzir(Object item) throws InterruptedException {
-        aguardarLocal(); // Aguarde acesso local exclusivo
-        espacoNoBuffer.acquire(); // Aguarde até que haja espaço disponível no buffer
-        mutex.acquire();
-
-        buffer[in] = item;
-        in = (in + 1) % 5;
-
+        buffer.put(item); // Adicionar um item ao buffer
         System.out.println("Produzindo: " + item);
-
-        mutex.release();
-        itens.release(); // Sinalize que há um item no buffer
     }
 
-    private void aguardarLocal() throws InterruptedException {
-        // Aguarde até que haja espaço disponível no buffer
-        while (espacoNoBuffer.availablePermits() == 0) {
-            // O buffer está cheio, aguarde até que haja espaço
-            Thread.sleep(100); // Aguarda por um tempo antes de verificar novamente
-        }
+    public Object consumir() throws InterruptedException {
+        Object item = buffer.take(); // Consumir um item do buffer
+        System.out.println("Consumindo: " + item);
+        return item;
     }
 }
 
 public class Main {
     public static void main(String[] args) {
-        final int NUM_PRODUTORES = 3;
-        final int NUM_CONSUMIDORES = 1;
+        final int NUM_PRODUTORES = 1;
+        final int NUM_CONSUMIDORES = 3; // Use vários consumidores
 
         ProdutorConsumidor pc = new ProdutorConsumidor();
 
@@ -69,7 +39,7 @@ public class Main {
 
         for (int i = 0; i < NUM_CONSUMIDORES; i++) {
             Thread consumidorThread = new Thread(() -> {
-                for (int j = 0; j < 50; j++) {
+                while (true) {
                     try {
                         pc.consumir();
                     } catch (InterruptedException e) {
